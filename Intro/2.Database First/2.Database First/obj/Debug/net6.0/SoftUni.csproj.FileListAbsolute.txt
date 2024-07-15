@@ -56,3 +56,4 @@ C:\Users\Em4eto\Desktop\GitHub\EFCore\Intro\2.Database First\2.Database First\ob
 C:\Users\Em4eto\Desktop\GitHub\EFCore\Intro\2.Database First\2.Database First\obj\Debug\net6.0\SoftUni.pdb
 C:\Users\Em4eto\Desktop\GitHub\EFCore\Intro\2.Database First\2.Database First\obj\Debug\net6.0\SoftUni.genruntimeconfig.cache
 C:\Users\Em4eto\Desktop\GitHub\EFCore\Intro\2.Database First\2.Database First\obj\Debug\net6.0\ref\SoftUni.dll
+C:\Users\Em4eto\Desktop\GitHub\EFCore\Intro\2.Database First\2.Database First\obj\Debug\net6.0\SoftUni.sourcelink.json

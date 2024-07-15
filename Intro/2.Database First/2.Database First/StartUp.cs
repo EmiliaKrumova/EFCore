@@ -1,7 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.SqlClient.Server;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic;
 using SoftUni.Data;
 using SoftUni.Models;
+using System.Data;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 
 
@@ -13,9 +17,241 @@ namespace SoftUni
         {
            
             SoftUniContext context = new SoftUniContext();
-            Console.WriteLine(GetAddressesByTown(context));
+            Console.WriteLine(GetEmployeesByFirstNameStartingWithSa(context));
 
         }
+
+        public static string RemoveTown(SoftUniContext context)
+        {
+            var townToDelete = context.Towns
+                .Where(t => t.Name == "Seattle")
+                .FirstOrDefault();
+            if (townToDelete != null)
+            {
+                var adressesToDelete = context.Addresses
+                    .Where(a => a.TownId == townToDelete.TownId)
+                    .ToList();
+                int countOfAdresses = adressesToDelete.Count();
+
+                foreach (var adress in adressesToDelete)
+                {
+                    var employeesInAdres = context.Employees
+                        .Where(e => e.AddressId == adress.AddressId)
+                        .ToList();
+
+                    foreach (var employee in employeesInAdres)
+                    {
+                        employee.AddressId = null;
+                    }
+                }
+                context.SaveChanges();
+                context.Addresses.RemoveRange(adressesToDelete);
+                context.Towns.Remove(townToDelete);
+                context.SaveChanges();
+                return $"{countOfAdresses} addresses in Seattle were deleted";
+
+            }
+            else
+            {
+                return $"0 addresses in Seattle were deleted";
+            }
+            
+        }
+        //Write a program that deletes a town with name "Seattle".
+        //Also, delete all addresses that are in those towns. Return the number of addresses that were deleted in format "{count} addresses in Seattle were deleted".
+        //There will be employees living at those addresses, which will be a problem when trying to delete the addresses. So, start by setting the AddressId of each employee for the given address to null.
+        //After all of them are set to null, you may safely remove all the addresses from the context and finally remove the given town.
+        public static string DeleteProjectById(SoftUniContext context)
+        {
+            var projectToDelete = context.Projects.Find(2);
+            if (projectToDelete != null)
+            {
+                
+                var employeeProjects = context.EmployeesProjects
+                    .Where(ep => ep.ProjectId == 2)
+                    .ToList();
+
+                context.EmployeesProjects.RemoveRange(employeeProjects);
+               
+                context.Projects.Remove(projectToDelete);
+                
+                context.SaveChanges();
+            }
+           
+            var projectNames = context.Projects
+                .Take(10)
+                .Select(p => p.Name)
+                .ToList();
+
+            return string.Join(Environment.NewLine, projectNames);
+        }
+        //Let's delete the project with id 2. Then, take 10 projects and return their names, each on a new line. Remember to restore your database after this task.
+
+
+        public static string GetEmployeesByFirstNameStartingWithSa(SoftUniContext context)
+        {
+            var employees = context.Employees.
+                Where(e=>e.FirstName.ToLower().StartsWith("sa"))
+                .Select(e=>new
+                {
+                    FirstName = e.FirstName,
+                    LastName = e.LastName,
+                    Job = e.JobTitle,
+                    Salary = e.Salary
+                })
+                .OrderBy(e=>e.FirstName)
+                .ThenBy(e=>e.LastName)
+                .ToList();
+            StringBuilder sb = new StringBuilder();
+            foreach (var employee in employees)
+            {
+                sb.AppendLine($"{employee.FirstName} {employee.LastName} - {employee.Job} - (${employee.Salary:F2})");
+            }
+            return sb.ToString().TrimEnd();
+        }
+        //Write a program that finds all employees whose first name starts with "Sa".
+        //Return their first, last name, their job title and salary rounded to 2 symbols after the decimal separator in the format given in the example below.
+        //Order them by the first name, then by last name (ascending).
+        //Constraints
+        // Find a way to make your query case -insensitive.
+        public static string IncreaseSalaries(SoftUniContext context)
+        {
+            string[] departmentsToPromote = new []{"Engineering", "Tool Design", "Marketing", "Information Services"};
+
+            var employeesToPromote = context.Employees
+                .Where(e =>
+                departmentsToPromote.Contains(e.Department.Name))
+                .ToList();
+            
+            
+            foreach(var employee in employeesToPromote)
+            {
+                employee.Salary *= 1.12M;
+                
+            }
+            context.SaveChanges();
+
+            var promotedToPrint = employeesToPromote
+                .Select(pr => new
+                {
+                    FirstName = pr.FirstName,
+                    LastName = pr.LastName,                   
+                    Salary = pr.Salary
+                    
+
+                })
+                .OrderBy(pr=>pr.FirstName)
+                .ThenBy(pr=>pr.LastName) .ToList();
+            StringBuilder sb = new StringBuilder();
+            foreach( var employee in promotedToPrint)
+            {
+                sb.AppendLine($"{employee.FirstName} {employee.LastName} (${employee.Salary:F2})");
+            }
+
+            return sb.ToString().TrimEnd();
+
+        }
+
+        //Write a program that increases salaries of all employees that are in the Engineering, Tool Design, Marketing, or Information Services department by 12%.
+        //Then return first name, last name and salary (2 symbols after the decimal separator) for those employees, whose salary was increased. Order them by first name (ascending), then by last name (ascending). Format of the output
+        public static string GetLatestProjects(SoftUniContext context)
+        {
+            var projects = context.Projects.
+                OrderByDescending(x=> x.StartDate)
+                //.ThenByDescending(x => x.StartDate)
+                //.ThenBy(x => x.Name)
+                .Take(10)
+                .OrderBy(x=>x.Name)
+                .Select(x => new
+                {
+                    ProjectName = x.Name,
+                    ProjectDescription = x.Description,
+                    Startdate = x.StartDate.ToString("M/d/yyyy h:mm:ss tt",CultureInfo.InvariantCulture)
+                }).ToList();
+
+            StringBuilder sb = new StringBuilder();
+            foreach (var project in projects)
+            {
+                sb.AppendLine(project.ProjectName);
+                sb.AppendLine(project.ProjectDescription);
+                sb.AppendLine(project.Startdate.ToString());
+            }
+            return sb.ToString().TrimEnd();
+        }
+        //Write a program that returns information about the last 10 started projects. Sort them by name lexicographically and return their name, description and start date, each on a new row. 
+
+        public static string GetDepartmentsWithMoreThan5Employees(SoftUniContext context)
+        {
+            var departments = context.Departments
+                .Where(d => d.Employees.Count() > 5)
+                .OrderBy(d => d.Employees.Count())
+                .ThenBy(d => d.Name)
+                .Select(d => new
+                {
+                    deptName = d.Name,
+                    managerName = d.Manager.FirstName + " " + d.Manager.LastName,
+                    employeesIndept = d.Employees
+                    .Select(e => new
+                    {
+                        employeeFirstName = e.FirstName,
+                        employeeLastName = e.LastName,
+                        emplJob = e.JobTitle
+                    }).OrderBy(e => e.employeeFirstName)
+                    .ThenBy(e => e.employeeLastName)
+                    .ToArray()
+
+                })
+                .ToArray();
+            StringBuilder sb = new StringBuilder();          
+
+            foreach (var department in departments)
+            {
+                sb.AppendLine($"{department.deptName} - {department.managerName}");
+                foreach(var e in department.employeesIndept)
+                {
+                    sb.AppendLine($"{e.employeeFirstName} {e.employeeLastName} - {e.emplJob}");
+                }
+            }
+            return sb.ToString().TrimEnd();
+        }
+        //Find all departments with more than 5 employees. Order them by employee count (ascending), then by department name (alphabetically).
+        //For each department, print the department name and the manager's first and last name on the first row.
+        //Then print the first name, the last name and the job title of every employee on a new row. Order the employees by first name (ascending), then by last name (ascending).
+        //Format of the output: For each department print it in the format "<DepartmentName> - <ManagerFirstName>  <ManagerLastName>" and for each employee print it in the format "<EmployeeFirstName> <EmployeeLastName> - <JobTitle>".
+
+
+        public static string GetEmployee147(SoftUniContext context)
+        {
+            var employee = context.Employees
+                .Where(e => e.EmployeeId == 147)
+                .Select(e=> new
+                {
+                    FirstName =   e.FirstName,
+                     LastName = e.LastName,
+                    JobTitle = e.JobTitle,
+                    ProjectsNames = e.EmployeesProjects                
+                    .Select(ep => ep.Project.Name)
+                    .OrderBy(pn => pn)
+                    .ToList()
+
+                })
+                .FirstOrDefault();
+                StringBuilder sb = new StringBuilder();
+            if(employee != null)
+            {
+                sb.AppendLine($"{employee.FirstName} {employee.LastName} - {employee.JobTitle}");
+
+                foreach(var pr in employee.ProjectsNames)
+                {
+                    sb.AppendLine(pr);
+                }
+            }
+            return sb.ToString().TrimEnd();
+        }
+
+        //Get the employee with id 147.
+        //Return only his/her first name, last name, job title and projects (print only their names).
+        //The projects should be ordered by name (ascending). Format of the output.
 
         public static string GetAddressesByTown(SoftUniContext context)
         {
