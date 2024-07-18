@@ -17,9 +17,34 @@ namespace SoftUni
         {
            
             SoftUniContext context = new SoftUniContext();
-            Console.WriteLine(GetEmployeesByFirstNameStartingWithSa(context));
+            Console.WriteLine(GetAddressesByTownNew(context));
 
         }
+
+        public static string GetAddressesByTownNew(SoftUniContext context)
+        {
+            var addresses = context.Addresses
+                .Select(a => new
+                {
+                    a.AddressText,
+                    TownName = a.Town.Name,
+                    EmployeesCount = context.Employees.Count(e => e.AddressId == a.AddressId)
+                })
+                .OrderByDescending(a => a.EmployeesCount)
+                .ThenBy(a => a.TownName)
+                .ThenBy(a => a.AddressText)
+                .Take(10)
+                .ToList();
+
+            var result = new StringBuilder();
+            foreach (var address in addresses)
+            {
+                result.AppendLine($"{address.AddressText}, {address.TownName} - {address.EmployeesCount} employees");
+            }
+
+            return result.ToString().TrimEnd();
+        }
+
 
         public static string RemoveTown(SoftUniContext context)
         {
