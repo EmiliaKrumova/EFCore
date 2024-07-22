@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using ProductShop.Data;
 using ProductShop.DTOs.Import;
@@ -30,9 +31,48 @@ namespace ProductShop
            // ImportProducts(productShopContext, inputProducts);
            // ImportCategories(productShopContext, inputCategories);
            //ImportCategoryProducts(productShopContext, inputCategoriesProducts);
-            Console.WriteLine(GetCategoriesByProductsCount(productShopContext));
+            Console.WriteLine(GetUsersWithProducts(productShopContext));
 
 
+        }
+        public static string GetUsersWithProducts(ProductShopContext context)
+        {
+            var users = context.Users              
+                .Where(u => u.ProductsSold.Any(b => b.BuyerId != null))
+                .Select(u => new
+                {
+                    firstName = u.FirstName,
+                    lastName = u.LastName,
+                    age = u.Age,
+                    soldProducts =new
+                    {
+                        count = u.ProductsSold.Where(b => b.BuyerId != null).Count(),
+                        products = u.ProductsSold
+                            .Where(p => p.BuyerId != null)
+                            .Select(p => new
+                            {
+                                 name = p.Name,
+                                 price = p.Price
+                            })
+                    }                    
+
+                })
+                .OrderByDescending(x=>x.soldProducts.products.Count());
+
+            var resultObject = new
+            {
+                usersCount = users.Count(),
+                users = users
+
+            };
+            var serializeSettings = new JsonSerializerSettings
+            {
+               NullValueHandling =  NullValueHandling.Ignore
+            };
+
+            var result = JsonConvert.SerializeObject(resultObject,serializeSettings);
+            return result;
+                
         }
         public static string GetCategoriesByProductsCount(ProductShopContext context)
         {
