@@ -35,6 +35,7 @@ namespace ProductShop.Utilities
         {
             StringBuilder sb = new StringBuilder();
             XmlRootAttribute root = new XmlRootAttribute(rootName);
+
             XmlSerializer serializer = new XmlSerializer(typeof(T), root);
             XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces();
             namespaces.Add(string.Empty, string.Empty);

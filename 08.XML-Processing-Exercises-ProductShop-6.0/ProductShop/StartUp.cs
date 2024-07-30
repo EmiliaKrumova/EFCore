@@ -20,9 +20,106 @@ namespace ProductShop
             //string inputXml = File.ReadAllText("../../../Datasets/products.xml");
             // string inputXml = File.ReadAllText("../../../Datasets/categories.xml");
            // string inputXml = File.ReadAllText("../../../Datasets/categories-products.xml");
-            string result = GetProductsInRange(context);
+            string result = GetUsersWithProducts(context);
             Console.WriteLine(result);
 
+        }
+        //08
+        public static string GetUsersWithProducts(ProductShopContext context)
+        {
+            XmlHelper helper = new XmlHelper();
+           
+
+
+            var users = new ExportUserWithCountAndProductsIn
+            {
+                Count = context.Users.Count(x => x.ProductsSold.Any()),
+                Users = context.Users.Where(x => x.ProductsSold.Count() > 0)
+                .Select(u => new ExportUserWithProductsDTO
+                {
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    Age = u.Age,
+                    SoldProducts = new ExportSoldProductDTO
+                    {
+                        Count = u.ProductsSold.Count,
+                        SoldProducts = u.ProductsSold
+                        .Select(s =>
+                                       new ExportProductDTOSecondary
+                                       {
+                                           Name = s.Name,
+                                           Price = s.Price
+                                       })
+                                       .OrderByDescending(p => p.Price)
+                                       .ToArray()
+
+
+                    }
+                })
+                .OrderByDescending(u => u.SoldProducts.Count)
+                .Take(10)
+                .ToList()
+
+
+            };
+           
+            var result = helper.Serialize(users, "Users");
+            return result;
+        }
+        //07
+        public static string GetCategoriesByProductsCount(ProductShopContext context)
+        {
+            IMapper mapper = InitializeAutoMapper();
+            XmlHelper xmlHelper = new XmlHelper();
+
+            ExportCategoryWithCountDTO[] categories = context.Categories
+                .Select(c => new ExportCategoryWithCountDTO
+                {
+                    Name = c.Name,
+
+                    Count = c.CategoryProducts.Count(),
+
+                    AveragePrice = c.CategoryProducts
+                    .Select(cp => cp.Product.Price).Average(),
+
+                    TotalRevenue = c.CategoryProducts
+                    .Select(cp=>cp.Product.Price)
+                    .Sum(),
+                })
+                .OrderByDescending(c=>c.Count)
+                .ThenBy(c=>c.TotalRevenue)
+                .ToArray();
+
+            string result = xmlHelper.Serialize <ExportCategoryWithCountDTO[]>(categories, "Categories");
+            return result;
+
+
+        }
+        //06
+        public static string GetSoldProducts(ProductShopContext context)
+        {
+            IMapper mapper = InitializeAutoMapper();
+            XmlHelper helper = new XmlHelper();
+            ExportUserDTO[] users = context.Users
+                .Where(u=>u.ProductsSold!=null && u.ProductsSold.Count>0)
+                .OrderBy(u=>u.LastName)
+                .ThenBy(u=>u.FirstName)
+                .Select(u=> new ExportUserDTO
+                {
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    Products = u.ProductsSold.Select(ps=>new ExportProductDTOSecondary()
+                    {
+                        Name = ps.Name,
+                        Price = ps.Price
+                    })
+                    .ToArray(),
+                })
+                .Take(5)
+                .ToArray();
+
+            string result = helper.Serialize(users, "Users");
+            return result;
         }
         //05
         public static string GetProductsInRange(ProductShopContext context)
@@ -30,7 +127,7 @@ namespace ProductShop
             IMapper mapper = InitializeAutoMapper();
             XmlHelper helper = new XmlHelper();
 
-            var productsDTOs = context.Products
+            ExportProductDTO[] productsDTOs = context.Products
                 .Where(p => p.Price >= 500 && p.Price <= 1000)
                 .OrderBy(p => p.Price)
                 .Take(10)
