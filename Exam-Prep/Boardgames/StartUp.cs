@@ -40,9 +40,9 @@
 
         private static void ExportEntities(BoardgamesContext context, string exportDir)
         {
-            var exportCreatorsWithTheirBoardgames = DataProcessor.Serializer.ExportCreatorsWithTheirBoardgames(context);
+           /* var exportCreatorsWithTheirBoardgames = DataProcessor.Serializer.ExportCreatorsWithTheirBoardgames(context);
             Console.WriteLine(exportCreatorsWithTheirBoardgames);
-            File.WriteAllText(exportDir + "Actual Result - ExportCreatorsWithTheirBoardgames.xml", exportCreatorsWithTheirBoardgames);
+            File.WriteAllText(exportDir + "Actual Result - ExportCreatorsWithTheirBoardgames.xml", exportCreatorsWithTheirBoardgames);*/
 
             var year = 2021;
             double rating = 9.50;
